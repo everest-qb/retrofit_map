@@ -42,6 +42,11 @@
             </intent-filter>
 
         </activity>
+
+        <service
+            android:name=".net.NetService"
+            android:enabled="true"
+            android:exported="false"></service>
     </application>
 
 </manifest>
