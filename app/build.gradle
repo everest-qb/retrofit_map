@@ -6,7 +6,7 @@ android {
     defaultConfig {
         applicationId "tw.housemart.test.retrofit"
         minSdkVersion 15
-        targetSdkVersion 24
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -16,6 +16,8 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    productFlavors {
     }
 }
 
@@ -29,5 +31,6 @@ dependencies {
     compile 'com.squareup.retrofit2:converter-gson:2.1.0'
     compile 'com.google.android.gms:play-services-maps:9.4.0'
     compile 'com.squareup.okhttp3:okhttp:3.5.0'
+    compile group: 'org.apache.mina', name: 'mina-core', version: '2.0.16'
     testCompile 'junit:junit:4.12'
 }
