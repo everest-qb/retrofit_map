@@ -16,6 +16,7 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import tw.housemart.test.retrofit.net.client.ClientProtocolCodecFactory;
@@ -24,6 +25,7 @@ import tw.housemart.test.retrofit.net.util.SHCProtocal;
 
 
 public class NetService extends Service {
+    private static final String TAG="QB";
     private  IBinder mBinder;
     private String HOSTNAME="192.168.7.14";
     private int PORT=5888;
@@ -38,7 +40,7 @@ public class NetService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d("QB","on bind");
+        Log.d(TAG,"on Bind");
         deviceUUID=intent.getByteArrayExtra("DEVICE_UUID");
         groupUUID=intent.getByteArrayExtra("GROUP_UUID");
         mBinder = new LocalBinder();
@@ -51,7 +53,7 @@ public class NetService extends Service {
 
     @Override
     public void onCreate() {
-        Log.d("QB","on create");
+        Log.d(TAG,"on Create");
         connector = new NioSocketConnector();
         connector.getFilterChain().addLast("codec", new ProtocolCodecFilter(new ClientProtocolCodecFactory()));
         connector.getSessionConfig().setMaxReadBufferSize(1048704);
@@ -63,12 +65,15 @@ public class NetService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.d(TAG,"on Destroy");
         connector.dispose();
         super.onDestroy();
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
+        Log.d(TAG,"on Unbind");
+        this.handler.leave();
         return super.onUnbind(intent);
     }
 
@@ -101,10 +106,19 @@ public class NetService extends Service {
     }
 
     public void requestAllGroupUUID(){
-        handler.getSession();
-        SHCData tmp=new SHCData();
-        tmp.setCommand(SHCProtocal.CONTROL_GET_GROUP_UUIDS);
-        tmp.setGroupId(groupUUID);
-        handler.getSession().write(tmp);
+        new Thread(new Runnable(){
+            @Override
+            public void run() {
+                handler.getSession();
+                SHCData tmp=new SHCData();
+                tmp.setCommand(SHCProtocal.CONTROL_GET_GROUP_UUIDS);
+                tmp.setGroupId(groupUUID);
+                handler.getSession().write(tmp);
+            }
+        }).start();
+    }
+
+    public List<byte[]> findGroupGUUID(){
+       return  handler.getUuidList();
     }
 }

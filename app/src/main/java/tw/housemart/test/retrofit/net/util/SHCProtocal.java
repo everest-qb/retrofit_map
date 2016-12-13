@@ -1,5 +1,6 @@
 package tw.housemart.test.retrofit.net.util;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Random;
 
 public class SHCProtocal {
@@ -44,6 +45,25 @@ public class SHCProtocal {
 		byte[] returnValue=new byte[48];
 		Random r=new Random(System.currentTimeMillis());
 		r.nextBytes(returnValue);
+		return returnValue;
+	}
+
+	public static byte[] genGroupID(String input){
+		byte[] returnValue=new byte[48];
+		byte[] in;
+		try {
+			in=input.getBytes("US-ASCII");
+		} catch (UnsupportedEncodingException e) {
+			in=new byte[]{32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+					32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,48,49,50,51,52,53,54,55,56,57};
+		}
+		for(int i=0;i<48;i++){
+			if(i<in.length) {
+				returnValue[i] = in[i];
+			}else{
+				returnValue[i]=32;
+			}
+		}
 		return returnValue;
 	}
 }

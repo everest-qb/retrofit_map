@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -29,7 +30,7 @@ import tw.housemart.test.retrofit.net.util.DatatypeConverter;
 import tw.housemart.test.retrofit.net.util.SHCProtocal;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
-
+    private static final String TAG="QB";
     private GoogleMap mMap;
     private NetService mService;
     private byte[] deviceID;
@@ -42,8 +43,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        deviceID=SHCProtocal.genUUID();
-        groupID=SHCProtocal.genGroupID();
+        prepareConfig();
+
     }
 
 
@@ -60,6 +61,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         intent.putExtra("GROUP_UUID",groupID);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         super.onStart();
+    }
+
+    private void prepareConfig(){
+        SharedPreferences settings = getSharedPreferences("MAPSETS", 0);
+        boolean ready = settings.getBoolean("INIT_COMPLETE", false);
+        if(ready){
+            deviceID=DatatypeConverter.hexStringToByteArray(settings.getString("DEVICE_ID",""));
+            groupID=DatatypeConverter.hexStringToByteArray(settings.getString("GROUP_ID",""));
+        }else{
+            deviceID=SHCProtocal.genUUID();
+            groupID=SHCProtocal.genGroupID("                                      0123456789");
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putBoolean("INIT_COMPLETE", true);
+            editor.putString("DEVICE_ID",DatatypeConverter.printHexBinary(deviceID));
+            editor.putString("GROUP_ID",DatatypeConverter.printHexBinary(groupID));
+            editor.commit();
+        }
     }
 
     //service link
@@ -82,8 +100,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         mMap.setMyLocationEnabled(true);
         LatLng sydney = new LatLng(24.1983066, 120.6605483);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        MarkerOptions mark= new MarkerOptions().position(sydney).title("You are here.");
+
+        mMap.addMarker(mark);
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener(){
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+                Log.i(TAG,DatatypeConverter.printHexBinary(deviceID));
+                Log.i(TAG,DatatypeConverter.printHexBinary(groupID));
+                if(mService!=null){
+                    mService.requestAllGroupUUID();
+                }
+            }
+        });
     }
 
 }
