@@ -1,8 +1,13 @@
 package tw.housemart.test.retrofit.net;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -33,6 +38,7 @@ public class NetService extends Service {
     private FriendHandler handler;
     private byte[] deviceUUID;
     private byte[] groupUUID;
+    private LocationManager locationManager;
 
     public NetService() {
 
@@ -41,6 +47,7 @@ public class NetService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         Log.d(TAG,"on Bind");
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, handler);
         deviceUUID=intent.getByteArrayExtra("DEVICE_UUID");
         groupUUID=intent.getByteArrayExtra("GROUP_UUID");
         mBinder = new LocalBinder();
@@ -54,6 +61,7 @@ public class NetService extends Service {
     @Override
     public void onCreate() {
         Log.d(TAG,"on Create");
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         connector = new NioSocketConnector();
         connector.getFilterChain().addLast("codec", new ProtocolCodecFilter(new ClientProtocolCodecFactory()));
         connector.getSessionConfig().setMaxReadBufferSize(1048704);
@@ -73,16 +81,17 @@ public class NetService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
         Log.d(TAG,"on Unbind");
+        locationManager.removeUpdates(handler);
         this.handler.leave();
         return super.onUnbind(intent);
     }
-
 
     public class LocalBinder extends Binder {
         public NetService getService() {
             return NetService.this;
         }
     }
+
 
     //service
     public void connect(){

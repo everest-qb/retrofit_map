@@ -1,5 +1,8 @@
 package tw.housemart.test.retrofit.net;
 
+import android.location.Location;
+import android.location.LocationListener;
+import android.os.Bundle;
 import android.util.Log;
 
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -19,7 +22,7 @@ import tw.housemart.test.retrofit.net.util.SHCProtocal;
  * Created by user on 2016/12/8.
  */
 
-public class FriendHandler extends IoHandlerAdapter {
+public class FriendHandler extends IoHandlerAdapter implements LocationListener {
     public enum NET {SESSION_CREATED,SESSION_OPENED
         ,SESSON_CLOSED,REGISTED,NOT_REGISTED
     ,OK,ERROR}
@@ -36,6 +39,8 @@ public class FriendHandler extends IoHandlerAdapter {
 
     }
 
+
+    //apache mina listener
     @Override
     public void sessionCreated(IoSession session) throws Exception {
         this.registered=false;
@@ -73,7 +78,7 @@ public class FriendHandler extends IoHandlerAdapter {
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         SHCData obj=(SHCData)message;
-        Log.i(TAG,"CMD:"+ DatatypeConverter.printHexBinary(obj.getCommand()));
+        Log.i(TAG,Thread.currentThread().getName()+" CMD:"+ DatatypeConverter.printHexBinary(obj.getCommand()));
         if(Arrays.equals(SHCProtocal.CONTROL_RESPONSE_SUCESS,obj.getCommand())){
             if(NET.SESSION_OPENED.name().equals(STATUS)){
                 registered=true;
@@ -112,7 +117,7 @@ public class FriendHandler extends IoHandlerAdapter {
                         uuidList.remove(obj.getsUUID());
                     Log.d(TAG,"LEAVE:"+uuidList.size());
                 }else if(str.startsWith(TOGETHER.LOCATE.name())){
-                    Log.d(TAG,"LOCATE");
+                    Log.d(TAG,"LOCATE:"+str);
                 }
             }
         }
@@ -123,6 +128,33 @@ public class FriendHandler extends IoHandlerAdapter {
         Log.d(TAG,"messageSent");
     }
 
+
+    //location listener
+    @Override
+    public void onLocationChanged(Location location) {
+        String latStr=Double.toString(location.getLatitude());
+        String lonStr=Double.toString(location.getLongitude());
+        String locateStr=TOGETHER.LOCATE.name()+":"+latStr+":"+lonStr;
+        Log.d(TAG,"Locate String:"+locateStr);
+        locate(locateStr);
+    }
+
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String s) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+
+    }
+
+    //private function
     private void join(){
         for(byte[] destination:uuidList) {
             SHCData obj = new SHCData();
@@ -136,7 +168,6 @@ public class FriendHandler extends IoHandlerAdapter {
             }
             session.write(obj);
         }
-
     }
 
     private void requestAllGroupUUID(){
@@ -146,23 +177,46 @@ public class FriendHandler extends IoHandlerAdapter {
         session.write(tmp);
     }
 
-
-    public void leave(){
-        for(byte[] destination:uuidList) {
-            SHCData obj = new SHCData();
-            obj.setCommand(SHCProtocal.CONTROL_SEND);
-            obj.setsUUID(deviceID);
-            obj.setGroupId(groupID);
-            obj.setdUUID(destination);
-            try {
-                obj.setData(TOGETHER.LEAVE.name().getBytes("US-ASCII"));
-            } catch (UnsupportedEncodingException e) {
+    private void locate(final String data){
+        new Thread(new Runnable() {
+            public void run() {
+                for(byte[] destination:uuidList) {
+                    SHCData obj = new SHCData();
+                    obj.setCommand(SHCProtocal.CONTROL_SEND);
+                    obj.setsUUID(deviceID);
+                    obj.setGroupId(groupID);
+                    obj.setdUUID(destination);
+                    try {
+                        obj.setData(data.getBytes("US-ASCII"));
+                    } catch (UnsupportedEncodingException e) {
+                    }
+                    session.write(obj);
+                }
             }
-            session.write(obj);
-        }
-        Log.d(TAG,"CALL LEAVE");
+        }).start();
     }
 
+    //public function
+    public void leave(){
+        new Thread(new Runnable() {
+            public void run() {
+                for(byte[] destination:uuidList) {
+                    SHCData obj = new SHCData();
+                    obj.setCommand(SHCProtocal.CONTROL_SEND);
+                    obj.setsUUID(deviceID);
+                    obj.setGroupId(groupID);
+                    obj.setdUUID(destination);
+                    try {
+                        obj.setData(TOGETHER.LEAVE.name().getBytes("US-ASCII"));
+                    } catch (UnsupportedEncodingException e) {
+                    }
+                    session.write(obj);
+                }
+            }
+        }).start();
+
+        Log.d(TAG,"CALL LEAVE");
+    }
 
     public byte[] getDeviceID() {
         return deviceID;
@@ -170,7 +224,6 @@ public class FriendHandler extends IoHandlerAdapter {
 
 
     //get set
-
     public void setDeviceID(byte[] deviceID) {
         this.deviceID = deviceID;
     }
