@@ -13,6 +13,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import tw.housemart.test.retrofit.net.object.SHCData;
 import tw.housemart.test.retrofit.net.util.DatatypeConverter;
@@ -30,13 +32,12 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     private static final String TAG="QB";
     private byte[] deviceID;
     private byte[]  groupID;
-    private List<byte[]> uuidList;
+    private CopyOnWriteArrayList<byte[]> uuidList=new CopyOnWriteArrayList<>();
     private IoSession session;
     private String STATUS;
     private boolean registered;
 
     public FriendHandler(){
-
     }
 
 
@@ -96,9 +97,13 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
             }else{
                 STATUS=NET.ERROR.name();
                 Log.d(TAG,STATUS);
+
+                STATUS=NET.OK.name();
+                Log.d(TAG,STATUS);
             }
         }else if(Arrays.equals(SHCProtocal.CONTROL_RESPONSE_UUIDS,obj.getCommand())){
-            uuidList=obj.getUuidList();
+            uuidList.clear();
+            uuidList.addAll(obj.getUuidList());
             if(NET.REGISTED.name().equals(STATUS)){
                 STATUS=NET.OK.name();
                 join();
@@ -109,12 +114,10 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                 String str = new String(obj.getData(), Charset.forName("US-ASCII"));
                 if(str.length()>0)
                 if(TOGETHER.JOIN.name().equals(str)){
-                    if(uuidList!=null)
-                        uuidList.add(obj.getsUUID());
+                    addUUID(obj.getsUUID());
                     Log.d(TAG,"JON:"+uuidList.size());
                 }else if(TOGETHER.LEAVE.name().equals(str)){
-                    if(uuidList!=null)
-                        uuidList.remove(obj.getsUUID());
+                    removeUUID(obj.getsUUID());
                     Log.d(TAG,"LEAVE:"+uuidList.size());
                 }else if(str.startsWith(TOGETHER.LOCATE.name())){
                     Log.d(TAG,"LOCATE:"+str);
@@ -155,6 +158,28 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     }
 
     //private function
+    private void addUUID(byte[] bs){
+            boolean passed=false;
+            for(byte[] lbs:uuidList){
+                if(Arrays.equals(lbs,bs)){
+                    passed=true;
+                }
+            }
+            if(!passed)
+                uuidList.add(bs);
+    }
+
+    private void removeUUID(byte[] bs){
+            byte[] remove=null;
+            for(byte[] lbs:uuidList){
+                if(Arrays.equals(lbs,bs)){
+                    remove=lbs;
+                }
+            }
+            if(remove!=null)
+                uuidList.remove(remove);
+    }
+
     private void join(){
         for(byte[] destination:uuidList) {
             SHCData obj = new SHCData();
@@ -198,8 +223,8 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
 
     //public function
     public void leave(){
-        new Thread(new Runnable() {
-            public void run() {
+        //new Thread(new Runnable() {
+            //public void run() {
                 for(byte[] destination:uuidList) {
                     SHCData obj = new SHCData();
                     obj.setCommand(SHCProtocal.CONTROL_SEND);
@@ -212,8 +237,8 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                     }
                     session.write(obj);
                 }
-            }
-        }).start();
+            //}
+        //}).start();
 
         Log.d(TAG,"CALL LEAVE");
     }
@@ -244,11 +269,11 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
         this.STATUS = STATUS;
     }
 
-    public List<byte[]> getUuidList() {
+    public CopyOnWriteArrayList<byte[]> getUuidList() {
         return uuidList;
     }
 
-    public void setUuidList(List<byte[]> uuidList) {
+    public void setUuidList(CopyOnWriteArrayList<byte[]> uuidList) {
         this.uuidList = uuidList;
     }
 

@@ -23,6 +23,8 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import tw.housemart.test.retrofit.net.client.ClientProtocolCodecFactory;
 import tw.housemart.test.retrofit.net.object.SHCData;
@@ -47,7 +49,7 @@ public class NetService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         Log.d(TAG,"on Bind");
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, handler);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, handler);
         deviceUUID=intent.getByteArrayExtra("DEVICE_UUID");
         groupUUID=intent.getByteArrayExtra("GROUP_UUID");
         mBinder = new LocalBinder();
@@ -127,7 +129,7 @@ public class NetService extends Service {
         }).start();
     }
 
-    public List<byte[]> findGroupGUUID(){
+    public CopyOnWriteArrayList<byte[]> findGroupGUUID(){
        return  handler.getUuidList();
     }
 }
