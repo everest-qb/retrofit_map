@@ -3,29 +3,22 @@ package tw.housemart.test.retrofit.net;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Binder;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import tw.housemart.test.retrofit.cllback.LocateUpdateGoogleMap;
 import tw.housemart.test.retrofit.net.client.ClientProtocolCodecFactory;
 import tw.housemart.test.retrofit.net.object.SHCData;
 import tw.housemart.test.retrofit.net.util.SHCProtocal;
@@ -38,6 +31,7 @@ public class NetService extends Service {
     private int PORT=5888;
     private NioSocketConnector connector;
     private FriendHandler handler;
+    private LocateUpdateGoogleMap locateListener;
     private byte[] deviceUUID;
     private byte[] groupUUID;
     private LocationManager locationManager;
@@ -83,8 +77,12 @@ public class NetService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
         Log.d(TAG,"on Unbind");
+        if(locateListener!=null) {
+            locationManager.removeUpdates(locateListener);
+            handler.removeTogetherListener(locateListener);
+        }
         locationManager.removeUpdates(handler);
-        this.handler.leave();
+        handler.leave();
         return super.onUnbind(intent);
     }
 
@@ -131,5 +129,11 @@ public class NetService extends Service {
 
     public CopyOnWriteArrayList<byte[]> findGroupGUUID(){
        return  handler.getUuidList();
+    }
+
+    public void registerLocate(LocateUpdateGoogleMap listener){
+        locateListener=listener;
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locateListener);
+        handler.addTogetherListener(locateListener);
     }
 }

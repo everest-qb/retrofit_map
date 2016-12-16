@@ -13,12 +13,16 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import tw.housemart.test.retrofit.net.object.SHCData;
 import tw.housemart.test.retrofit.net.util.DatatypeConverter;
 import tw.housemart.test.retrofit.net.util.SHCProtocal;
+import tw.housemart.test.retrofit.together.ChangeListener;
+import tw.housemart.test.retrofit.together.InfoObject;
+import tw.housemart.test.retrofit.together.TOGETHER;
 
 /**
  * Created by user on 2016/12/8.
@@ -28,7 +32,6 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     public enum NET {SESSION_CREATED,SESSION_OPENED
         ,SESSON_CLOSED,REGISTED,NOT_REGISTED
     ,OK,ERROR}
-    public enum TOGETHER {JOIN,LEAVE,LOCATE}
     private static final String TAG="QB";
     private byte[] deviceID;
     private byte[]  groupID;
@@ -36,6 +39,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     private IoSession session;
     private String STATUS;
     private boolean registered;
+    private ChangeListener changeListener;
 
     public FriendHandler(){
     }
@@ -58,8 +62,6 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        //this.uuidList.clear();
-        //this.uuidList=null;
         this.registered=false;
         this.session=null;
         STATUS=NET.SESSON_CLOSED.name();
@@ -96,8 +98,8 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                 Log.d(TAG,STATUS);
             }else{
                 STATUS=NET.ERROR.name();
-                Log.d(TAG,STATUS);
-
+                Log.w(TAG,STATUS);
+                removeUUID(obj.getsUUID());
                 STATUS=NET.OK.name();
                 Log.d(TAG,STATUS);
             }
@@ -116,11 +118,29 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                 if(TOGETHER.JOIN.name().equals(str)){
                     addUUID(obj.getsUUID());
                     Log.d(TAG,"JON:"+uuidList.size());
+                    if(changeListener!=null) {
+                        InfoObject info=new InfoObject();
+                        info.setUuid(obj.getsUUID());
+                        changeListener.onJoin(info);
+                    }
                 }else if(TOGETHER.LEAVE.name().equals(str)){
                     removeUUID(obj.getsUUID());
                     Log.d(TAG,"LEAVE:"+uuidList.size());
+                    if(changeListener!=null) {
+                        InfoObject info=new InfoObject();
+                        info.setUuid(obj.getsUUID());
+                        changeListener.onLeave(info);
+                    }
                 }else if(str.startsWith(TOGETHER.LOCATE.name())){
                     Log.d(TAG,"LOCATE:"+str);
+                    if(changeListener!=null) {
+                        InfoObject info=new InfoObject();
+                        Map<String,Double> map=InfoObject.strToLocate(str);
+                        info.setUuid(obj.getsUUID());
+                        info.setLongitude(map.get(InfoObject.LOCATE.longitude.name()));
+                        info.setLatitude(map.get(InfoObject.LOCATE.latitude.name()));
+                        changeListener.onLocate(info);
+                    }
                 }
             }
         }
@@ -135,9 +155,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     //location listener
     @Override
     public void onLocationChanged(Location location) {
-        String latStr=Double.toString(location.getLatitude());
-        String lonStr=Double.toString(location.getLongitude());
-        String locateStr=TOGETHER.LOCATE.name()+":"+latStr+":"+lonStr;
+        String locateStr=InfoObject.locateToStr(location.getLongitude(),location.getLatitude());
         Log.d(TAG,"Locate String:"+locateStr);
         locate(locateStr);
     }
@@ -247,6 +265,13 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
         return deviceID;
     }
 
+    public void addTogetherListener(ChangeListener listener){
+        changeListener=listener;
+    }
+
+    public void removeTogetherListener(ChangeListener listener){
+        changeListener=null;
+    }
 
     //get set
     public void setDeviceID(byte[] deviceID) {

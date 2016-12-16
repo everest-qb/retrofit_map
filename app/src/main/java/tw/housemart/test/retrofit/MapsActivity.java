@@ -1,10 +1,13 @@
 package tw.housemart.test.retrofit;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.location.Location;
+import android.location.LocationListener;
 import android.os.IBinder;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -24,17 +27,20 @@ import org.apache.mina.core.session.IoSession;
 import java.util.Arrays;
 import java.util.List;
 
+import tw.housemart.test.retrofit.cllback.LocateUpdateGoogleMap;
 import tw.housemart.test.retrofit.net.NetService;
 import tw.housemart.test.retrofit.net.object.SHCData;
 import tw.housemart.test.retrofit.net.util.DatatypeConverter;
 import tw.housemart.test.retrofit.net.util.SHCProtocal;
+import tw.housemart.test.retrofit.together.InfoObject;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
     private static final String TAG="QB";
     private GoogleMap mMap;
     private NetService mService;
     private byte[] deviceID;
     private byte[] groupID;
+    private LatLng me;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +93,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             NetService.LocalBinder binder = (NetService.LocalBinder) service;
             mService = binder.getService();
             mService.connect();
+            mService.registerLocate(locateListener);
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -94,16 +101,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     };
 
-    //google map service
+    //google map service listener
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setMyLocationEnabled(true);
-        LatLng sydney = new LatLng(24.1983066, 120.6605483);
-        MarkerOptions mark= new MarkerOptions().position(sydney).title("You are here.");
 
-        mMap.addMarker(mark);
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener(){
             @Override
@@ -116,5 +119,58 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
     }
+
+
+    //locate lishtener for updte map
+    private LocateUpdateGoogleMap locateListener=new LocateUpdateGoogleMap(){
+        @Override
+        public void onLocationChanged(Location location) {
+            final double lon=location.getLongitude();
+            final double lat=location.getLatitude();
+            MapsActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.i(TAG,"locate change LON:"+lon+" LAT:"+lat);
+                    if(me==null){
+                         me = new LatLng(lat,lon);
+                    MarkerOptions mark= new MarkerOptions().position(me).title("You are here");
+                    mMap.addMarker(mark);
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(me));
+                    }
+                }
+            });
+        }
+
+
+        @Override
+        public void onJoin(InfoObject obj) {
+            MapsActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
+        }
+
+        @Override
+        public void onLeave(InfoObject obj) {
+            MapsActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
+        }
+
+        @Override
+        public void onLocate(InfoObject obj) {
+            MapsActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
+        }
+    };
 
 }
