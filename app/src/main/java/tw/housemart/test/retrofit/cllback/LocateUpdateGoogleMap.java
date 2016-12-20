@@ -3,6 +3,7 @@ package tw.housemart.test.retrofit.cllback;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
 
 import tw.housemart.test.retrofit.together.ChangeListener;
 import tw.housemart.test.retrofit.together.InfoObject;
@@ -12,7 +13,7 @@ import tw.housemart.test.retrofit.together.InfoObject;
  */
 
 public class LocateUpdateGoogleMap implements LocationListener ,ChangeListener {
-
+    private static final String TAG="QB";
     //locate
     @Override
     public void onLocationChanged(Location location) {

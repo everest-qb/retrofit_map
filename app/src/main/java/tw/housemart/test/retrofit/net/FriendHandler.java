@@ -12,9 +12,7 @@ import org.apache.mina.core.session.IoSession;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import tw.housemart.test.retrofit.net.object.SHCData;
@@ -117,10 +115,12 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                 if(str.length()>0)
                 if(TOGETHER.JOIN.name().equals(str)){
                     addUUID(obj.getsUUID());
-                    Log.d(TAG,"JON:"+uuidList.size());
+                    Log.d(TAG,"JOIN:"+uuidList.size());
                     if(changeListener!=null) {
                         InfoObject info=new InfoObject();
                         info.setUuid(obj.getsUUID());
+                        info.setLatitude(0d);
+                        info.setLongitude(0d);
                         changeListener.onJoin(info);
                     }
                 }else if(TOGETHER.LEAVE.name().equals(str)){
@@ -210,6 +210,14 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
             } catch (UnsupportedEncodingException e) {
             }
             session.write(obj);
+            //update google map
+            if(changeListener!=null) {
+                InfoObject info = new InfoObject();
+                info.setUuid(destination);
+                info.setLatitude(0d);
+                info.setLongitude(0d);
+                changeListener.onJoin(info);
+            }
         }
     }
 

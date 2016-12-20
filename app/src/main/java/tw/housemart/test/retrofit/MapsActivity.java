@@ -1,13 +1,11 @@
 package tw.housemart.test.retrofit;
 
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.location.Location;
-import android.location.LocationListener;
 import android.os.IBinder;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -18,18 +16,13 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.session.IdleStatus;
-import org.apache.mina.core.session.IoSession;
-
-import java.util.Arrays;
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import tw.housemart.test.retrofit.cllback.LocateUpdateGoogleMap;
 import tw.housemart.test.retrofit.net.NetService;
-import tw.housemart.test.retrofit.net.object.SHCData;
 import tw.housemart.test.retrofit.net.util.DatatypeConverter;
 import tw.housemart.test.retrofit.net.util.SHCProtocal;
 import tw.housemart.test.retrofit.together.InfoObject;
@@ -40,7 +33,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private NetService mService;
     private byte[] deviceID;
     private byte[] groupID;
-    private LatLng me;
+    private Marker me;
+    private ConcurrentHashMap<String,Marker> friends;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +44,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         prepareConfig();
-
+        friends=new ConcurrentHashMap<>();
     }
 
 
@@ -92,8 +86,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public void onServiceConnected(ComponentName className, IBinder service) {
             NetService.LocalBinder binder = (NetService.LocalBinder) service;
             mService = binder.getService();
-            mService.connect();
             mService.registerLocate(locateListener);
+            mService.connect();
+
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -106,8 +101,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setMyLocationEnabled(true);
+        mMap.getUiSettings().setZoomGesturesEnabled(true);
 
-
+        Log.d(TAG,mMap.getMinZoomLevel()+"  "+mMap.getMaxZoomLevel());
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener(){
             @Override
             public void onMapLongClick(LatLng latLng) {
@@ -132,10 +128,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 public void run() {
                     Log.i(TAG,"locate change LON:"+lon+" LAT:"+lat);
                     if(me==null){
-                         me = new LatLng(lat,lon);
-                    MarkerOptions mark= new MarkerOptions().position(me).title("You are here");
-                    mMap.addMarker(mark);
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(me));
+                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title("You are here");
+                        me=mMap.addMarker(mark);
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat,lon)));
+                    }else{
+                        me.setPosition(new LatLng(lat,lon));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat,lon)));
                     }
                 }
             });
@@ -144,30 +142,57 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         public void onJoin(InfoObject obj) {
+            final String uuid=DatatypeConverter.printHexBinary(obj.getUuid());
+            final double lat =obj.getLatitude();
+            final double lon =obj.getLongitude();
             MapsActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-
+                    if(me==null){
+                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title("You are here");
+                        me=mMap.addMarker(mark);
+                    }
+                    double plus=0.01*(friends.size()+1);
+                    if(friends.containsKey(uuid)){
+                        friends.get(uuid).setPosition(new LatLng(me.getPosition().latitude+plus,me.getPosition().longitude+plus));
+                    }else{
+                        MarkerOptions mark= new MarkerOptions().position(new LatLng(me.getPosition().latitude+plus,me.getPosition().longitude+0.01)).title(uuid.substring(31,48));
+                        friends.put(uuid, mMap.addMarker(mark));
+                    }
                 }
             });
         }
 
         @Override
         public void onLeave(InfoObject obj) {
+            Log.d(TAG,"onLeave");
+            final String uuid=DatatypeConverter.printHexBinary(obj.getUuid());
             MapsActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-
+                    if(friends.containsKey(uuid)){
+                        friends.get(uuid).remove();
+                        friends.remove(uuid);
+                    }
                 }
             });
         }
 
         @Override
         public void onLocate(InfoObject obj) {
+            Log.d(TAG,"onLocate");
+            final String uuid=DatatypeConverter.printHexBinary(obj.getUuid());
+            final double lat =obj.getLatitude();
+            final double lon =obj.getLongitude();
             MapsActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-
+                    if(friends.containsKey(uuid)){
+                        friends.get(uuid).setPosition(new LatLng(lat,lon));
+                    }else{
+                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title(uuid.substring(31,48));
+                        friends.put(uuid, mMap.addMarker(mark));
+                    }
                 }
             });
         }

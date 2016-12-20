@@ -27,8 +27,8 @@ import tw.housemart.test.retrofit.net.util.SHCProtocal;
 public class NetService extends Service {
     private static final String TAG="QB";
     private  IBinder mBinder;
-    private String HOSTNAME="192.168.7.14";
-    private int PORT=5888;
+    private String HOSTNAME="59.126.51.143";
+    private int PORT=5999;
     private NioSocketConnector connector;
     private FriendHandler handler;
     private LocateUpdateGoogleMap locateListener;
@@ -135,5 +135,6 @@ public class NetService extends Service {
         locateListener=listener;
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locateListener);
         handler.addTogetherListener(locateListener);
+        Log.d(TAG,"registerLocate");
     }
 }
