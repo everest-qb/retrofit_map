@@ -13,7 +13,7 @@ import tw.housemart.test.retrofit.together.InfoObject;
  */
 
 public class LocateUpdateGoogleMap implements LocationListener ,ChangeListener {
-    private static final String TAG="QB";
+    private static final String TAG="QB:LocateUpdateGoogleMap";
     //locate
     @Override
     public void onLocationChanged(Location location) {
@@ -49,6 +49,11 @@ public class LocateUpdateGoogleMap implements LocationListener ,ChangeListener {
 
     @Override
     public void onLocate(InfoObject obj) {
+
+    }
+
+    @Override
+    public void onNetLosed() {
 
     }
 }

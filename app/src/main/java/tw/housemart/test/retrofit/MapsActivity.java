@@ -6,10 +6,13 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.IBinder;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -28,13 +31,15 @@ import tw.housemart.test.retrofit.net.util.SHCProtocal;
 import tw.housemart.test.retrofit.together.InfoObject;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
-    private static final String TAG="QB";
+    private static final String TAG="QB:MapsActivity";
     private GoogleMap mMap;
     private NetService mService;
     private byte[] deviceID;
     private byte[] groupID;
     private Marker me;
     private ConcurrentHashMap<String,Marker> friends;
+    private ConnectivityManager cm;
+    private Toast toast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +50,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
         prepareConfig();
         friends=new ConcurrentHashMap<>();
+        cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        toast = Toast.makeText(getApplicationContext(),"Network Lose", Toast.LENGTH_SHORT);
     }
 
 
@@ -192,6 +199,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }else{
                         MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title(uuid.substring(31,48));
                         friends.put(uuid, mMap.addMarker(mark));
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onNetLosed() {
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            final boolean isConnected = activeNetwork != null &&
+                    activeNetwork.isConnectedOrConnecting();
+            MapsActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if(isConnected){
+                        mService.connect();
+                    }else{
+                        toast.show();
                     }
                 }
             });

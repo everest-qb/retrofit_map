@@ -4,13 +4,19 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.service.IoService;
+import org.apache.mina.core.service.IoServiceListener;
+import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
@@ -25,7 +31,7 @@ import tw.housemart.test.retrofit.net.util.SHCProtocal;
 
 
 public class NetService extends Service {
-    private static final String TAG="QB";
+    private static final String TAG="QB:NetService";
     private  IBinder mBinder;
     private String HOSTNAME="59.126.51.143";
     private int PORT=5999;
@@ -35,6 +41,7 @@ public class NetService extends Service {
     private byte[] deviceUUID;
     private byte[] groupUUID;
     private LocationManager locationManager;
+
 
     public NetService() {
 
@@ -54,6 +61,7 @@ public class NetService extends Service {
        return mBinder;
     }
 
+
     @Override
     public void onCreate() {
         Log.d(TAG,"on Create");
@@ -64,7 +72,7 @@ public class NetService extends Service {
         connector.getSessionConfig().setMinReadBufferSize(2048);
         handler=new FriendHandler();
         connector.setHandler(handler);
-        super.onCreate();
+            super.onCreate();
     }
 
     @Override
@@ -92,7 +100,6 @@ public class NetService extends Service {
         }
     }
 
-
     //service
     public void connect(){
         new Thread(new Runnable() {
@@ -118,11 +125,7 @@ public class NetService extends Service {
         new Thread(new Runnable(){
             @Override
             public void run() {
-                handler.getSession();
-                SHCData tmp=new SHCData();
-                tmp.setCommand(SHCProtocal.CONTROL_GET_GROUP_UUIDS);
-                tmp.setGroupId(groupUUID);
-                handler.getSession().write(tmp);
+                handler.requestAllGroupUUID();
             }
         }).start();
     }

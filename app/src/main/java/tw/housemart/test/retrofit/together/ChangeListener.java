@@ -8,4 +8,5 @@ public interface ChangeListener {
     public void onJoin(InfoObject obj);
     public void onLeave(InfoObject obj);
     public void onLocate(InfoObject obj);
+    public void onNetLosed();
 }

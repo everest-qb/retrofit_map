@@ -30,7 +30,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     public enum NET {SESSION_CREATED,SESSION_OPENED
         ,SESSON_CLOSED,REGISTED,NOT_REGISTED
     ,OK,ERROR}
-    private static final String TAG="QB";
+    private static final String TAG="QB:FriendHandler";
     private byte[] deviceID;
     private byte[]  groupID;
     private CopyOnWriteArrayList<byte[]> uuidList=new CopyOnWriteArrayList<>();
@@ -40,6 +40,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     private ChangeListener changeListener;
 
     public FriendHandler(){
+        STATUS=NET.SESSON_CLOSED.name();
     }
 
 
@@ -54,6 +55,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
 
     @Override
     public void sessionOpened(IoSession session) throws Exception {
+        this.session=session;
         STATUS=NET.SESSION_OPENED.name();
         Log.d(TAG,STATUS);
     }
@@ -63,6 +65,9 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
         this.registered=false;
         this.session=null;
         STATUS=NET.SESSON_CLOSED.name();
+        if(changeListener!=null){
+            changeListener.onNetLosed();
+        }
         Log.d(TAG,STATUS);
     }
 
@@ -73,7 +78,8 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-
+        Log.d(TAG,"exceptionCaught");
+        STATUS=NET.SESSON_CLOSED.name();
     }
 
     @Override
@@ -199,6 +205,8 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     }
 
     private void join(){
+        if(NET.SESSON_CLOSED.name().equals(STATUS))
+            return;
         for(byte[] destination:uuidList) {
             SHCData obj = new SHCData();
             obj.setCommand(SHCProtocal.CONTROL_SEND);
@@ -221,14 +229,9 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
         }
     }
 
-    private void requestAllGroupUUID(){
-        SHCData tmp=new SHCData();
-        tmp.setCommand(SHCProtocal.CONTROL_GET_GROUP_UUIDS);
-        tmp.setGroupId(groupID);
-        session.write(tmp);
-    }
-
     private void locate(final String data){
+        if(NET.SESSON_CLOSED.name().equals(STATUS))
+            return;
         new Thread(new Runnable() {
             public void run() {
                 for(byte[] destination:uuidList) {
@@ -249,6 +252,8 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
 
     //public function
     public void leave(){
+        if(NET.SESSON_CLOSED.name().equals(STATUS))
+            return;
         //new Thread(new Runnable() {
             //public void run() {
                 for(byte[] destination:uuidList) {
@@ -279,6 +284,15 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
 
     public void removeTogetherListener(ChangeListener listener){
         changeListener=null;
+    }
+
+    public void requestAllGroupUUID(){
+        if(NET.SESSON_CLOSED.name().equals(STATUS))
+            return;
+        SHCData tmp=new SHCData();
+        tmp.setCommand(SHCProtocal.CONTROL_GET_GROUP_UUIDS);
+        tmp.setGroupId(groupID);
+        session.write(tmp);
     }
 
     //get set
