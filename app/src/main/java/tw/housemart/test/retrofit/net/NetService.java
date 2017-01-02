@@ -40,6 +40,7 @@ public class NetService extends Service {
     private LocateUpdateGoogleMap locateListener;
     private byte[] deviceUUID;
     private byte[] groupUUID;
+    private String name;
     private LocationManager locationManager;
 
 
@@ -53,10 +54,12 @@ public class NetService extends Service {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, handler);
         deviceUUID=intent.getByteArrayExtra("DEVICE_UUID");
         groupUUID=intent.getByteArrayExtra("GROUP_UUID");
+        name=intent.getStringExtra("MY_NAME");
         mBinder = new LocalBinder();
         if(handler!=null){
             handler.setDeviceID(deviceUUID);
             handler.setGroupID(groupUUID);
+            handler.setName(name);
         }
        return mBinder;
     }

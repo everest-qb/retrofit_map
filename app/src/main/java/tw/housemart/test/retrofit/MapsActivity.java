@@ -36,6 +36,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private NetService mService;
     private byte[] deviceID;
     private byte[] groupID;
+    private String name;
     private Marker me;
     private ConcurrentHashMap<String,Marker> friends;
     private ConnectivityManager cm;
@@ -76,6 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(ready){
             deviceID=DatatypeConverter.hexStringToByteArray(settings.getString("DEVICE_ID",""));
             groupID=DatatypeConverter.hexStringToByteArray(settings.getString("GROUP_ID",""));
+            name=settings.getString("MY_NAME","");
         }else{
             deviceID=SHCProtocal.genUUID();
             groupID=SHCProtocal.genGroupID("                                      0123456789");
@@ -83,6 +85,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             editor.putBoolean("INIT_COMPLETE", true);
             editor.putString("DEVICE_ID",DatatypeConverter.printHexBinary(deviceID));
             editor.putString("GROUP_ID",DatatypeConverter.printHexBinary(groupID));
+            editor.putString("MY_NAME","MySelf");
             editor.commit();
         }
     }
@@ -142,6 +145,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         me.setPosition(new LatLng(lat,lon));
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat,lon)));
                     }
+                    me.showInfoWindow();
                 }
             });
         }

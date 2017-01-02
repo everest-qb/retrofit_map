@@ -33,6 +33,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     private static final String TAG="QB:FriendHandler";
     private byte[] deviceID;
     private byte[]  groupID;
+    private String name;
     private CopyOnWriteArrayList<byte[]> uuidList=new CopyOnWriteArrayList<>();
     private IoSession session;
     private String STATUS;
@@ -119,7 +120,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
             if(NET.OK.name().equals(STATUS) || NET.REGISTED.name().equals(STATUS)) {
                 String str = new String(obj.getData(), Charset.forName("US-ASCII"));
                 if(str.length()>0)
-                if(TOGETHER.JOIN.name().equals(str)){
+                if(TOGETHER.JOIN.name().startsWith(str)){
                     addUUID(obj.getsUUID());
                     Log.d(TAG,"JOIN:"+uuidList.size());
                     if(changeListener!=null) {
@@ -127,6 +128,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                         info.setUuid(obj.getsUUID());
                         info.setLatitude(0d);
                         info.setLongitude(0d);
+                        info.setName(str.replaceFirst("JOIN",""));
                         changeListener.onJoin(info);
                     }
                 }else if(TOGETHER.LEAVE.name().equals(str)){
@@ -214,7 +216,8 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
             obj.setGroupId(groupID);
             obj.setdUUID(destination);
             try {
-                obj.setData(TOGETHER.JOIN.name().getBytes("US-ASCII"));
+                String sendDate=TOGETHER.JOIN.name()+name;
+                obj.setData(sendDate.getBytes("US-ASCII"));
             } catch (UnsupportedEncodingException e) {
             }
             session.write(obj);
@@ -338,5 +341,9 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
 
     public void setRegistered(boolean registered) {
         this.registered = registered;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
