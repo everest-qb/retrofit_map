@@ -147,6 +147,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                         info.setUuid(obj.getsUUID());
                         info.setLongitude(map.get(InfoObject.LOCATE.longitude.name()));
                         info.setLatitude(map.get(InfoObject.LOCATE.latitude.name()));
+                        info.setName(InfoObject.dataStrToName(str));
                         changeListener.onLocate(info);
                     }
                 }
@@ -163,7 +164,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
     //location listener
     @Override
     public void onLocationChanged(Location location) {
-        String locateStr=InfoObject.locateToStr(location.getLongitude(),location.getLatitude());
+        String locateStr=InfoObject.locateToStr(location.getLongitude(),location.getLatitude())+":"+name;
         Log.d(TAG,"Locate String:"+locateStr);
         locate(locateStr);
     }
@@ -227,6 +228,7 @@ public class FriendHandler extends IoHandlerAdapter implements LocationListener 
                 info.setUuid(destination);
                 info.setLatitude(0d);
                 info.setLongitude(0d);
+                info.setName("UNKNOWN");
                 changeListener.onJoin(info);
             }
         }

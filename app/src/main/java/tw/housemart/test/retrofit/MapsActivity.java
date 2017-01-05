@@ -138,7 +138,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 public void run() {
                     Log.i(TAG,"locate change LON:"+lon+" LAT:"+lat);
                     if(me==null){
-                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title("You are here");
+                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title(name);
                         me=mMap.addMarker(mark);
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat,lon)));
                     }else{
@@ -156,19 +156,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             final String uuid=DatatypeConverter.printHexBinary(obj.getUuid());
             final double lat =obj.getLatitude();
             final double lon =obj.getLongitude();
+            final String myName=obj.getName();
             MapsActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if(me==null){
-                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title("You are here");
+                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title("Myself");
                         me=mMap.addMarker(mark);
+                        me.showInfoWindow();
                     }
                     double plus=0.01*(friends.size()+1);
                     if(friends.containsKey(uuid)){
                         friends.get(uuid).setPosition(new LatLng(me.getPosition().latitude+plus,me.getPosition().longitude+plus));
+                        friends.get(uuid).showInfoWindow();
                     }else{
-                        MarkerOptions mark= new MarkerOptions().position(new LatLng(me.getPosition().latitude+plus,me.getPosition().longitude+0.01)).title(uuid.substring(31,48));
-                        friends.put(uuid, mMap.addMarker(mark));
+                        MarkerOptions markopt= new MarkerOptions().position(new LatLng(me.getPosition().latitude+plus,me.getPosition().longitude+0.01)).snippet(uuid.substring(31,48));
+                        markopt.title(myName);
+                        Marker mark=mMap.addMarker(markopt);
+                        mark.showInfoWindow();
+                        friends.put(uuid, mark);
                     }
                 }
             });
@@ -195,14 +201,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             final String uuid=DatatypeConverter.printHexBinary(obj.getUuid());
             final double lat =obj.getLatitude();
             final double lon =obj.getLongitude();
+            final String myName=obj.getName();
             MapsActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if(friends.containsKey(uuid)){
                         friends.get(uuid).setPosition(new LatLng(lat,lon));
+                        friends.get(uuid).showInfoWindow();
                     }else{
-                        MarkerOptions mark= new MarkerOptions().position(new LatLng(lat,lon)).title(uuid.substring(31,48));
-                        friends.put(uuid, mMap.addMarker(mark));
+                        MarkerOptions markopt= new MarkerOptions().position(new LatLng(lat,lon)).snippet(uuid.substring(31,48));
+                        markopt.title(myName);
+                        Marker mark=mMap.addMarker(markopt);
+                        mark.showInfoWindow();
+                        friends.put(uuid, mark);
                     }
                 }
             });

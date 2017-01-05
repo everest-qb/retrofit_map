@@ -17,6 +17,14 @@ public class InfoObject {
     private Double latitude;
     private String name;
 
+    public static String dataStrToName(String data){
+        if(data.startsWith(TOGETHER.LOCATE.name())){
+            String[] array=data.split(":");
+            return array[3];
+        }
+        return "";
+    }
+
     public static Map<String,Double> strToLocate(String data){
         Map<String,Double> returnValue=new HashMap<>();
         if(data.startsWith(TOGETHER.LOCATE.name())){
